@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 let initialTarea = {
 	label: "",
 	done: false
 }
+
+let mainUrl = "https://playground.4geeks.com/apis/fake/todos/user/omararcx"
 
 //create your first component
 const Home = () => {
@@ -13,6 +15,21 @@ const Home = () => {
 	const [error, setError] = useState(false)
 
 
+	const getTask = async () => {
+		try {
+			let response = await fetch(mainUrl)
+			let data = await response.json()
+			if (response.ok) {
+				setTareaLista(data)
+			}
+			if (response.status == 404) {
+				createUSer()
+			}
+		} catch (error) {
+			console.log(error)
+		}
+	}
+
 	const handleChange = (event) => {
 		setTarea({
 			label: event.target.value,
@@ -20,13 +37,50 @@ const Home = () => {
 		})
 	}
 
+	const createUSer = async () => {
+		try {
+			let response = await fetch(mainUrl, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify([])
+			})
+			if (response.ok) {
+				getTask()
+			}
 
-	const handleSaveTask = (event) => {
+
+		} catch (error) {
+			console.log(error)
+
+		}
+	}
+
+	const handleSaveTask = async (event) => {
 		if (event.key === "Enter") {
 			if (tarea.label.trim() !== "") {
-				setTareaLista([...tareaLista, tarea])
-				setTarea(initialTarea)
-				setError(false)
+				//setTareaLista([...tareaLista, tarea])
+				//setTarea(initialTarea)
+				//setError(false)
+				try {
+					let response = await fetch(mainUrl, {
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json"
+						},
+						body: JSON.stringify([...tareaLista, tarea])
+					})
+					if (response.ok) {
+						getTask()
+						setTarea(initialTarea)
+						setError(false)
+					}
+
+				} catch (error) {
+					console.log(error)
+
+				}
 			}
 			else {
 				setError(true)
@@ -35,12 +89,45 @@ const Home = () => {
 		}
 	}
 
-	const deleteTask = (id) => {
+	const deleteTask = async (id) => {
 		let newArr = tareaLista.filter((item, index) => index != id)
-		setTareaLista(newArr)
+		try {
+			let response = await fetch(mainUrl, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(newArr)
+			})
+			if (response.ok) {
+				getTask()
+			}
+
+		} catch (error) {
+			console.log(error)
+		}
 
 	}
 
+	const deleteAll = async () => {
+		try {
+			let response = await fetch(mainUrl, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json"
+				},
+			})
+			if (response.ok) {
+				getTask()
+
+			}
+		} catch (error) {
+			console.log(error)
+		}
+
+	}
+
+	useEffect(() => { getTask() }, [])
 
 	return (
 		<div className="contenedor">
@@ -56,13 +143,16 @@ const Home = () => {
 				>
 				</input>
 			</form>
-			<ol>
-				{tareaLista.map((item, index) => {
-					return <li key={index} onClick={() => deleteTask(index)}>{item.label}</li>
+			<div className="listas">
+				<ol>
+					{tareaLista.map((item, index) => {
+						return <li key={index} onClick={() => deleteTask(index)}>{item.label} </li>
 
-				})}
-			</ol>
-		</div>
+					})}
+				</ol>
+			</div>
+			<button onClick={() => deleteAll()}>Borrar Todo</button>
+		</div >
 	);
 };
 
